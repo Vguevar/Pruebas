@@ -1,0 +1,1498 @@
+CREATE OR REPLACE PACKAGE BODY PKG_DROPME_PRUEBA IS
+
+  PROCEDURE P_DROPME_P1(P_ESQUEMA_PADRE  IN VARCHAR2,
+                        P_PROCESO_PADRE  IN VARCHAR2,
+                        P_ESQUEMA_PREVIO IN VARCHAR2,
+                        P_PROCESO_PREVIO IN VARCHAR2,
+                        P_FILAS_CREAR    IN NATURAL,
+                        P_TRUNCAR        IN BOOLEAN,
+                        P_FALLAR         IN BOOLEAN,
+                        P_MSG            OUT VARCHAR2) IS
+    V_ERROR     VARCHAR2(4000);
+    V_MSG       VARCHAR2(100);
+    V_MSG_DUMMY VARCHAR2(100);
+    i           NATURAL := 0;
+    C_PROCESO CONSTANT VARCHAR2(100) := 'P_DROPME_P1';
+    C_FECHA   CONSTANT DATE := TRUNC(SYSDATE);
+    C_INICIO  CONSTANT DATE := SYSDATE;
+  BEGIN
+    V_MSG := 'INICIO';
+  
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => NULL,
+                   P_PROCESO_PADRE  => NULL,
+                   P_ESQUEMA_PREVIO => NULL,
+                   P_PROCESO_PREVIO => NULL,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => NULL,
+                   P_ESTADO         => 'INICIADO',
+                   P_EXITOSO        => NULL,
+                   P_MENSAJE        => 'INICIADO');
+  
+    V_MSG := 'FALLA CONTROLADA';
+  
+    IF P_FALLAR THEN
+      V_MSG := 'PROVOCANDO FALLA CONTROLADA';
+      P_MSG := 'ERRADO POR FALLA CONTROLADA';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => NULL,
+                     P_PROCESO_PADRE  => NULL,
+                     P_ESQUEMA_PREVIO => NULL,
+                     P_PROCESO_PREVIO => NULL,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => SYSDATE,
+                     P_ESTADO         => 'TERMINADO',
+                     P_EXITOSO        => 'N',
+                     P_MENSAJE        => P_MSG);
+      RAISE_APPLICATION_ERROR(-20101, 'FALLA CONTROLADA');
+    END IF;
+  
+    V_MSG := 'CONDICION TRUNCAR';
+  
+    IF P_TRUNCAR THEN
+      V_MSG := 'TRUNCANDO';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => NULL,
+                     P_PROCESO_PADRE  => NULL,
+                     P_ESQUEMA_PREVIO => NULL,
+                     P_PROCESO_PREVIO => NULL,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => NULL,
+                     P_ESTADO         => 'INICIADO',
+                     P_EXITOSO        => NULL,
+                     P_MENSAJE        => V_MSG);
+      EXECUTE IMMEDIATE 'TRUNCATE TABLE DROPME_P1 DROP STORAGE';
+    END IF;
+  
+    V_MSG := 'FILAS A INSERTAR';
+  
+    IF NVL(P_FILAS_CREAR, 0) > 0 THEN
+      V_MSG := 'INSERTANDO FILAS';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => NULL,
+                     P_PROCESO_PADRE  => NULL,
+                     P_ESQUEMA_PREVIO => NULL,
+                     P_PROCESO_PREVIO => NULL,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => NULL,
+                     P_ESTADO         => 'INICIADO',
+                     P_EXITOSO        => NULL,
+                     P_MENSAJE        => V_MSG);
+      FOR i IN 1 .. P_FILAS_CREAR LOOP
+        INSERT /*+APPEND*/
+        INTO DROPME_P1
+        VALUES
+          (i, 'FILA ' || i);
+      END LOOP;
+      COMMIT;
+    END IF;
+  
+    V_MSG := 'EJECUTANDO P_DROPME_P2';
+    
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => NULL,
+                   P_PROCESO_PADRE  => NULL,
+                   P_ESQUEMA_PREVIO => NULL,
+                   P_PROCESO_PREVIO => NULL,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => NULL,
+                   P_ESTADO         => 'INICIADO',
+                   P_EXITOSO        => NULL,
+                   P_MENSAJE        => V_MSG);
+  
+    P_DROPME_P2('PKG_DROPME_PRUEBA',
+                C_PROCESO,
+                'PKG_DROPME_PRUEBA',
+                C_PROCESO,
+                1000,
+                TRUE,
+                FALSE,
+                V_MSG_DUMMY);
+  
+    V_MSG := 'FINALIZANDO';
+    P_MSG := 'TERMINO OK';
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => NULL,
+                   P_PROCESO_PADRE  => NULL,
+                   P_ESQUEMA_PREVIO => NULL,
+                   P_PROCESO_PREVIO => NULL,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => SYSDATE,
+                   P_ESTADO         => 'TERMINADO',
+                   P_EXITOSO        => 'S',
+                   P_MENSAJE        => P_MSG);
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      V_ERROR := SQLERRM;
+      P_MSG   := V_ERROR || ' ' || V_MSG;
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => NULL,
+                     P_PROCESO_PADRE  => NULL,
+                     P_ESQUEMA_PREVIO => NULL,
+                     P_PROCESO_PREVIO => NULL,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => SYSDATE,
+                     P_ESTADO         => 'TERMINADO',
+                     P_EXITOSO        => 'N',
+                     P_MENSAJE        => P_MSG);
+      RAISE;
+  END P_DROPME_P1;
+
+  PROCEDURE P_DROPME_P2(P_ESQUEMA_PADRE  IN VARCHAR2,
+                        P_PROCESO_PADRE  IN VARCHAR2,
+                        P_ESQUEMA_PREVIO IN VARCHAR2,
+                        P_PROCESO_PREVIO IN VARCHAR2,
+                        P_FILAS_CREAR    IN NATURAL,
+                        P_TRUNCAR        IN BOOLEAN,
+                        P_FALLAR         IN BOOLEAN,
+                        P_MSG            OUT VARCHAR2) IS
+    V_ERROR     VARCHAR2(4000);
+    V_MSG       VARCHAR2(100);
+    V_MSG_DUMMY VARCHAR2(100);
+    V_FILAS     NATURAL := 0;
+    i           NATURAL := 0;
+    C_PROCESO CONSTANT VARCHAR2(100) := 'P_DROPME_P2';
+    C_FECHA   CONSTANT DATE := TRUNC(SYSDATE);
+    C_INICIO  CONSTANT DATE := SYSDATE;
+  BEGIN
+    V_MSG := 'INICIO';
+  
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => NULL,
+                   P_ESTADO         => 'INICIADO',
+                   P_EXITOSO        => NULL,
+                   P_MENSAJE        => 'INICIADO');
+  
+    V_MSG := 'FALLA CONTROLADA';
+  
+    IF P_FALLAR THEN
+      V_MSG := 'PROVOCANDO FALLA CONTROLADA';
+      P_MSG := 'ERRADO POR FALLA CONTROLADA';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                     P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                     P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                     P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => SYSDATE,
+                     P_ESTADO         => 'TERMINADO',
+                     P_EXITOSO        => 'N',
+                     P_MENSAJE        => P_MSG);
+      RAISE_APPLICATION_ERROR(-20101, 'FALLA CONTROLADA');
+    END IF;
+  
+    V_MSG := 'CONDICION TRUNCAR';
+  
+    IF P_TRUNCAR THEN
+      V_MSG := 'TRUNCANDO';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => NULL,
+                     P_PROCESO_PADRE  => NULL,
+                     P_ESQUEMA_PREVIO => NULL,
+                     P_PROCESO_PREVIO => NULL,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => NULL,
+                     P_ESTADO         => 'INICIADO',
+                     P_EXITOSO        => NULL,
+                     P_MENSAJE        => V_MSG);
+      EXECUTE IMMEDIATE 'TRUNCATE TABLE DROPME_P2 DROP STORAGE';
+    END IF;
+  
+    V_MSG := 'LEYENDO DROPME_P1';
+    
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => NULL,
+                   P_ESTADO         => 'INICIADO',
+                   P_EXITOSO        => NULL,
+                   P_MENSAJE        => V_MSG);
+                       
+    SELECT COUNT(0) INTO V_FILAS FROM DROPME_P1;
+  
+    V_MSG := 'FILAS A INSERTAR';
+  
+    IF NVL(P_FILAS_CREAR, 0) > 0 THEN
+      V_MSG := 'INSERTANDO FILAS';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                     P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                     P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                     P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => NULL,
+                     P_ESTADO         => 'INICIADO',
+                     P_EXITOSO        => NULL,
+                     P_MENSAJE        => V_MSG);
+      FOR i IN 1 .. P_FILAS_CREAR LOOP
+        INSERT /*+APPEND*/
+        INTO DROPME_P2
+        VALUES
+          (i, 'FILA ' || i);
+      END LOOP;
+      COMMIT;
+    END IF;
+  
+    V_MSG := 'EJECUTANDO P_DROPME_P3';
+    
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => NULL,
+                   P_ESTADO         => 'INICIADO',
+                   P_EXITOSO        => NULL,
+                   P_MENSAJE        => V_MSG);
+  
+    P_DROPME_P3(P_ESQUEMA_PADRE,
+                P_PROCESO_PADRE,
+                P_ESQUEMA_PADRE,
+                C_PROCESO,
+                1000,
+                TRUE,
+                FALSE,
+                V_MSG_DUMMY);
+  
+    V_MSG := 'FINALIZANDO';
+    P_MSG := 'TERMINO OK';
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => SYSDATE,
+                   P_ESTADO         => 'TERMINADO',
+                   P_EXITOSO        => 'S',
+                   P_MENSAJE        => P_MSG);
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      V_ERROR := SQLERRM;
+      P_MSG   := V_ERROR || ' ' || V_MSG;
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                     P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                     P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                     P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => SYSDATE,
+                     P_ESTADO         => 'TERMINADO',
+                     P_EXITOSO        => 'N',
+                     P_MENSAJE        => P_MSG);
+      RAISE;
+  END P_DROPME_P2;
+
+  PROCEDURE P_DROPME_P3(P_ESQUEMA_PADRE  IN VARCHAR2,
+                        P_PROCESO_PADRE  IN VARCHAR2,
+                        P_ESQUEMA_PREVIO IN VARCHAR2,
+                        P_PROCESO_PREVIO IN VARCHAR2,
+                        P_FILAS_CREAR    IN NATURAL,
+                        P_TRUNCAR        IN BOOLEAN,
+                        P_FALLAR         IN BOOLEAN,
+                        P_MSG            OUT VARCHAR2) IS
+    V_ERROR     VARCHAR2(4000);
+    V_MSG       VARCHAR2(100);
+    V_MSG_DUMMY VARCHAR2(100);
+    V_FILAS     NATURAL := 0;
+    i           NATURAL := 0;
+    C_PROCESO CONSTANT VARCHAR2(100) := 'P_DROPME_P3';
+    C_FECHA   CONSTANT DATE := TRUNC(SYSDATE);
+    C_INICIO  CONSTANT DATE := SYSDATE;
+  BEGIN
+    V_MSG := 'INICIO';
+  
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => NULL,
+                   P_ESTADO         => 'INICIADO',
+                   P_EXITOSO        => NULL,
+                   P_MENSAJE        => 'INICIADO');
+  
+    V_MSG := 'FALLA CONTROLADA';
+  
+    IF P_FALLAR THEN
+      V_MSG := 'PROVOCANDO FALLA CONTROLADA';
+      P_MSG := 'ERRADO POR FALLA CONTROLADA';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                     P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                     P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                     P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => SYSDATE,
+                     P_ESTADO         => 'TERMINADO',
+                     P_EXITOSO        => 'N',
+                     P_MENSAJE        => P_MSG);
+      RAISE_APPLICATION_ERROR(-20101, 'FALLA CONTROLADA');
+    END IF;
+  
+    V_MSG := 'CONDICION TRUNCAR';
+  
+    IF P_TRUNCAR THEN
+      V_MSG := 'TRUNCANDO';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => NULL,
+                     P_PROCESO_PADRE  => NULL,
+                     P_ESQUEMA_PREVIO => NULL,
+                     P_PROCESO_PREVIO => NULL,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => NULL,
+                     P_ESTADO         => 'INICIADO',
+                     P_EXITOSO        => NULL,
+                     P_MENSAJE        => V_MSG);
+      EXECUTE IMMEDIATE 'TRUNCATE TABLE DROPME_P3 DROP STORAGE';
+    END IF;
+  
+    V_MSG := 'LEYENDO DROPME_P2';
+    
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => NULL,
+                   P_ESTADO         => 'INICIADO',
+                   P_EXITOSO        => NULL,
+                   P_MENSAJE        => V_MSG);
+                       
+    SELECT COUNT(0) INTO V_FILAS FROM DROPME_P2;
+  
+    V_MSG := 'FILAS A INSERTAR';
+  
+    IF NVL(P_FILAS_CREAR, 0) > 0 THEN
+      V_MSG := 'INSERTANDO FILAS';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                     P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                     P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                     P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => NULL,
+                     P_ESTADO         => 'INICIADO',
+                     P_EXITOSO        => NULL,
+                     P_MENSAJE        => V_MSG);
+      FOR i IN 1 .. P_FILAS_CREAR LOOP
+        INSERT /*+APPEND*/
+        INTO DROPME_P3
+        VALUES
+          (i, 'FILA ' || i);
+      END LOOP;
+      COMMIT;
+    END IF;
+  
+    V_MSG := 'EJECUTANDO P_DROPME_P4';
+    
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => NULL,
+                   P_ESTADO         => 'INICIADO',
+                   P_EXITOSO        => NULL,
+                   P_MENSAJE        => V_MSG);
+  
+    P_DROPME_P4(P_ESQUEMA_PADRE,
+                P_PROCESO_PADRE,
+                P_ESQUEMA_PADRE,
+                C_PROCESO,
+                1000,
+                TRUE,
+                FALSE,
+                V_MSG_DUMMY);
+  
+    V_MSG := 'FINALIZANDO';
+    P_MSG := 'TERMINO OK';
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => SYSDATE,
+                   P_ESTADO         => 'TERMINADO',
+                   P_EXITOSO        => 'S',
+                   P_MENSAJE        => P_MSG);
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      V_ERROR := SQLERRM;
+      P_MSG   := V_ERROR || ' ' || V_MSG;
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                     P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                     P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                     P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => SYSDATE,
+                     P_ESTADO         => 'TERMINADO',
+                     P_EXITOSO        => 'N',
+                     P_MENSAJE        => P_MSG);
+      RAISE;
+  END P_DROPME_P3;
+
+  PROCEDURE P_DROPME_P4(P_ESQUEMA_PADRE  IN VARCHAR2,
+                        P_PROCESO_PADRE  IN VARCHAR2,
+                        P_ESQUEMA_PREVIO IN VARCHAR2,
+                        P_PROCESO_PREVIO IN VARCHAR2,
+                        P_FILAS_CREAR    IN NATURAL,
+                        P_TRUNCAR        IN BOOLEAN,
+                        P_FALLAR         IN BOOLEAN,
+                        P_MSG            OUT VARCHAR2) IS
+    V_ERROR     VARCHAR2(4000);
+    V_MSG       VARCHAR2(100);
+    V_MSG_DUMMY VARCHAR2(100);
+    V_FILAS     NATURAL := 0;
+    i           NATURAL := 0;
+    C_PROCESO CONSTANT VARCHAR2(100) := 'P_DROPME_P4';
+    C_FECHA   CONSTANT DATE := TRUNC(SYSDATE);
+    C_INICIO  CONSTANT DATE := SYSDATE;
+  BEGIN
+    V_MSG := 'INICIO';
+  
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => NULL,
+                   P_ESTADO         => 'INICIADO',
+                   P_EXITOSO        => NULL,
+                   P_MENSAJE        => 'INICIADO');
+  
+    V_MSG := 'FALLA CONTROLADA';
+  
+    IF P_FALLAR THEN
+      V_MSG := 'PROVOCANDO FALLA CONTROLADA';
+      P_MSG := 'ERRADO POR FALLA CONTROLADA';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                     P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                     P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                     P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => SYSDATE,
+                     P_ESTADO         => 'TERMINADO',
+                     P_EXITOSO        => 'N',
+                     P_MENSAJE        => P_MSG);
+      RAISE_APPLICATION_ERROR(-20101, 'FALLA CONTROLADA');
+    END IF;
+  
+    V_MSG := 'CONDICION TRUNCAR';
+  
+    IF P_TRUNCAR THEN
+      V_MSG := 'TRUNCANDO';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => NULL,
+                     P_PROCESO_PADRE  => NULL,
+                     P_ESQUEMA_PREVIO => NULL,
+                     P_PROCESO_PREVIO => NULL,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => NULL,
+                     P_ESTADO         => 'INICIADO',
+                     P_EXITOSO        => NULL,
+                     P_MENSAJE        => V_MSG);
+      EXECUTE IMMEDIATE 'TRUNCATE TABLE DROPME_P4 DROP STORAGE';
+    END IF;
+  
+    V_MSG := 'LEYENDO DROPME_P3';
+    
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => NULL,
+                   P_ESTADO         => 'INICIADO',
+                   P_EXITOSO        => NULL,
+                   P_MENSAJE        => V_MSG);
+    
+    SELECT COUNT(0) INTO V_FILAS FROM DROPME_P3;
+  
+    V_MSG := 'FILAS A INSERTAR';
+  
+    IF NVL(P_FILAS_CREAR, 0) > 0 THEN
+      V_MSG := 'INSERTANDO FILAS';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                     P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                     P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                     P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => NULL,
+                     P_ESTADO         => 'INICIADO',
+                     P_EXITOSO        => NULL,
+                     P_MENSAJE        => V_MSG);
+      FOR i IN 1 .. P_FILAS_CREAR LOOP
+        INSERT /*+APPEND*/
+        INTO DROPME_P4
+        VALUES
+          (i, 'FILA ' || i);
+      END LOOP;
+      COMMIT;
+    END IF;
+  
+    V_MSG := 'EJECUTANDO P_DROPME_P5';
+    
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => NULL,
+                   P_ESTADO         => 'INICIADO',
+                   P_EXITOSO        => NULL,
+                   P_MENSAJE        => V_MSG);
+  
+    P_DROPME_P5(P_ESQUEMA_PADRE,
+                P_PROCESO_PADRE,
+                P_ESQUEMA_PADRE,
+                C_PROCESO,
+                1000,
+                TRUE,
+                FALSE,
+                V_MSG_DUMMY);
+  
+    V_MSG := 'FINALIZANDO';
+    P_MSG := 'TERMINO OK';
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => SYSDATE,
+                   P_ESTADO         => 'TERMINADO',
+                   P_EXITOSO        => 'S',
+                   P_MENSAJE        => P_MSG);
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      V_ERROR := SQLERRM;
+      P_MSG   := V_ERROR || ' ' || V_MSG;
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                     P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                     P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                     P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => SYSDATE,
+                     P_ESTADO         => 'TERMINADO',
+                     P_EXITOSO        => 'N',
+                     P_MENSAJE        => P_MSG);
+      RAISE;
+  END P_DROPME_P4;
+  
+  PROCEDURE P_DROPME_P5(P_ESQUEMA_PADRE  IN VARCHAR2,
+                        P_PROCESO_PADRE  IN VARCHAR2,
+                        P_ESQUEMA_PREVIO IN VARCHAR2,
+                        P_PROCESO_PREVIO IN VARCHAR2,
+                        P_FILAS_CREAR    IN NATURAL,
+                        P_TRUNCAR        IN BOOLEAN,
+                        P_FALLAR         IN BOOLEAN,
+                        P_MSG            OUT VARCHAR2) IS
+    V_ERROR     VARCHAR2(4000);
+    V_MSG       VARCHAR2(100);
+    V_MSG_DUMMY VARCHAR2(100);
+    V_FILAS     NATURAL := 0;
+    i           NATURAL := 0;
+    C_PROCESO CONSTANT VARCHAR2(100) := 'P_DROPME_P5';
+    C_FECHA   CONSTANT DATE := TRUNC(SYSDATE);
+    C_INICIO  CONSTANT DATE := SYSDATE;
+  BEGIN
+    V_MSG := 'INICIO';
+  
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => NULL,
+                   P_ESTADO         => 'INICIADO',
+                   P_EXITOSO        => NULL,
+                   P_MENSAJE        => 'INICIADO');
+  
+    V_MSG := 'FALLA CONTROLADA';
+  
+    IF P_FALLAR THEN
+      V_MSG := 'PROVOCANDO FALLA CONTROLADA';
+      P_MSG := 'ERRADO POR FALLA CONTROLADA';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                     P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                     P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                     P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => SYSDATE,
+                     P_ESTADO         => 'TERMINADO',
+                     P_EXITOSO        => 'N',
+                     P_MENSAJE        => P_MSG);
+      RAISE_APPLICATION_ERROR(-20101, 'FALLA CONTROLADA');
+    END IF;
+  
+    V_MSG := 'CONDICION TRUNCAR';
+  
+    IF P_TRUNCAR THEN
+      V_MSG := 'TRUNCANDO';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => NULL,
+                     P_PROCESO_PADRE  => NULL,
+                     P_ESQUEMA_PREVIO => NULL,
+                     P_PROCESO_PREVIO => NULL,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => NULL,
+                     P_ESTADO         => 'INICIADO',
+                     P_EXITOSO        => NULL,
+                     P_MENSAJE        => V_MSG);
+      EXECUTE IMMEDIATE 'TRUNCATE TABLE DROPME_P5 DROP STORAGE';
+    END IF;
+  
+    V_MSG := 'LEYENDO DROPME_P4';
+    
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => NULL,
+                   P_ESTADO         => 'INICIADO',
+                   P_EXITOSO        => NULL,
+                   P_MENSAJE        => V_MSG);
+                       
+    SELECT COUNT(0) INTO V_FILAS FROM DROPME_P4;
+  
+    V_MSG := 'FILAS A INSERTAR';
+  
+    IF NVL(P_FILAS_CREAR, 0) > 0 THEN
+      V_MSG := 'INSERTANDO FILAS';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                     P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                     P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                     P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => NULL,
+                     P_ESTADO         => 'INICIADO',
+                     P_EXITOSO        => NULL,
+                     P_MENSAJE        => V_MSG);
+      FOR i IN 1 .. P_FILAS_CREAR LOOP
+        INSERT /*+APPEND*/
+        INTO DROPME_P5
+        VALUES
+          (i, 'FILA ' || i);
+      END LOOP;
+      COMMIT;
+    END IF;
+  
+    V_MSG := 'EJECUTANDO P_DROPME_P6';
+  
+    P_DROPME_P6(P_ESQUEMA_PADRE,
+                P_PROCESO_PADRE,
+                P_ESQUEMA_PADRE,
+                C_PROCESO,
+                1000,
+                TRUE,
+                FALSE,
+                V_MSG_DUMMY);
+  
+    V_MSG := 'FINALIZANDO';
+    P_MSG := 'TERMINO OK';
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => SYSDATE,
+                   P_ESTADO         => 'TERMINADO',
+                   P_EXITOSO        => 'S',
+                   P_MENSAJE        => P_MSG);
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      V_ERROR := SQLERRM;
+      P_MSG   := V_ERROR || ' ' || V_MSG;
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                     P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                     P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                     P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => SYSDATE,
+                     P_ESTADO         => 'TERMINADO',
+                     P_EXITOSO        => 'N',
+                     P_MENSAJE        => P_MSG);
+      RAISE;
+  END P_DROPME_P5;
+  
+  PROCEDURE P_DROPME_P6(P_ESQUEMA_PADRE  IN VARCHAR2,
+                        P_PROCESO_PADRE  IN VARCHAR2,
+                        P_ESQUEMA_PREVIO IN VARCHAR2,
+                        P_PROCESO_PREVIO IN VARCHAR2,
+                        P_FILAS_CREAR    IN NATURAL,
+                        P_TRUNCAR        IN BOOLEAN,
+                        P_FALLAR         IN BOOLEAN,
+                        P_MSG            OUT VARCHAR2) IS
+    V_ERROR     VARCHAR2(4000);
+    V_MSG       VARCHAR2(100);
+    V_MSG_DUMMY VARCHAR2(100);
+    V_FILAS     NATURAL := 0;
+    i           NATURAL := 0;
+    C_PROCESO CONSTANT VARCHAR2(100) := 'P_DROPME_P6';
+    C_FECHA   CONSTANT DATE := TRUNC(SYSDATE);
+    C_INICIO  CONSTANT DATE := SYSDATE;
+  BEGIN
+    V_MSG := 'INICIO';
+  
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => NULL,
+                   P_ESTADO         => 'INICIADO',
+                   P_EXITOSO        => NULL,
+                   P_MENSAJE        => 'INICIADO');
+  
+    V_MSG := 'FALLA CONTROLADA';
+  
+    IF P_FALLAR THEN
+      V_MSG := 'PROVOCANDO FALLA CONTROLADA';
+      P_MSG := 'ERRADO POR FALLA CONTROLADA';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                     P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                     P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                     P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => SYSDATE,
+                     P_ESTADO         => 'TERMINADO',
+                     P_EXITOSO        => 'N',
+                     P_MENSAJE        => P_MSG);
+      RAISE_APPLICATION_ERROR(-20101, 'FALLA CONTROLADA');
+    END IF;
+  
+    V_MSG := 'CONDICION TRUNCAR';
+  
+    IF P_TRUNCAR THEN
+      V_MSG := 'TRUNCANDO';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => NULL,
+                     P_PROCESO_PADRE  => NULL,
+                     P_ESQUEMA_PREVIO => NULL,
+                     P_PROCESO_PREVIO => NULL,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => NULL,
+                     P_ESTADO         => 'INICIADO',
+                     P_EXITOSO        => NULL,
+                     P_MENSAJE        => V_MSG);
+      EXECUTE IMMEDIATE 'TRUNCATE TABLE DROPME_P6 DROP STORAGE';
+    END IF;
+  
+    V_MSG := 'LEYENDO DROPME_P5';
+    
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => NULL,
+                   P_ESTADO         => 'INICIADO',
+                   P_EXITOSO        => NULL,
+                   P_MENSAJE        => V_MSG);
+                       
+    SELECT COUNT(0) INTO V_FILAS FROM DROPME_P5;
+  
+    V_MSG := 'FILAS A INSERTAR';
+  
+    IF NVL(P_FILAS_CREAR, 0) > 0 THEN
+      V_MSG := 'INSERTANDO FILAS';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                     P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                     P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                     P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => NULL,
+                     P_ESTADO         => 'INICIADO',
+                     P_EXITOSO        => NULL,
+                     P_MENSAJE        => V_MSG);
+      FOR i IN 1 .. P_FILAS_CREAR LOOP
+        INSERT /*+APPEND*/
+        INTO DROPME_P6
+        VALUES
+          (i, 'FILA ' || i);
+      END LOOP;
+      COMMIT;
+    END IF;
+  
+    V_MSG := 'EJECUTANDO P_DROPME_P7';
+    
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => NULL,
+                   P_ESTADO         => 'INICIADO',
+                   P_EXITOSO        => NULL,
+                   P_MENSAJE        => V_MSG);    
+  
+    P_DROPME_P7(P_ESQUEMA_PADRE,
+                P_PROCESO_PADRE,
+                P_ESQUEMA_PADRE,
+                C_PROCESO,
+                1000,
+                TRUE,
+                FALSE,
+                V_MSG_DUMMY);
+  
+    V_MSG := 'FINALIZANDO';
+    P_MSG := 'TERMINO OK';
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => SYSDATE,
+                   P_ESTADO         => 'TERMINADO',
+                   P_EXITOSO        => 'S',
+                   P_MENSAJE        => P_MSG);
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      V_ERROR := SQLERRM;
+      P_MSG   := V_ERROR || ' ' || V_MSG;
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                     P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                     P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                     P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => SYSDATE,
+                     P_ESTADO         => 'TERMINADO',
+                     P_EXITOSO        => 'N',
+                     P_MENSAJE        => P_MSG);
+      RAISE;
+  END P_DROPME_P6;
+  
+  PROCEDURE P_DROPME_P7(P_ESQUEMA_PADRE  IN VARCHAR2,
+                        P_PROCESO_PADRE  IN VARCHAR2,
+                        P_ESQUEMA_PREVIO IN VARCHAR2,
+                        P_PROCESO_PREVIO IN VARCHAR2,
+                        P_FILAS_CREAR    IN NATURAL,
+                        P_TRUNCAR        IN BOOLEAN,
+                        P_FALLAR         IN BOOLEAN,
+                        P_MSG            OUT VARCHAR2) IS
+    V_ERROR     VARCHAR2(4000);
+    V_MSG       VARCHAR2(100);
+    V_MSG_DUMMY VARCHAR2(100);
+    V_FILAS     NATURAL := 0;
+    i           NATURAL := 0;
+    C_PROCESO CONSTANT VARCHAR2(100) := 'P_DROPME_P7';
+    C_FECHA   CONSTANT DATE := TRUNC(SYSDATE);
+    C_INICIO  CONSTANT DATE := SYSDATE;
+  BEGIN
+    V_MSG := 'INICIO';
+  
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => NULL,
+                   P_ESTADO         => 'INICIADO',
+                   P_EXITOSO        => NULL,
+                   P_MENSAJE        => 'INICIADO');
+  
+    V_MSG := 'FALLA CONTROLADA';
+  
+    IF P_FALLAR THEN
+      V_MSG := 'PROVOCANDO FALLA CONTROLADA';
+      P_MSG := 'ERRADO POR FALLA CONTROLADA';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                     P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                     P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                     P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => SYSDATE,
+                     P_ESTADO         => 'TERMINADO',
+                     P_EXITOSO        => 'N',
+                     P_MENSAJE        => P_MSG);
+      RAISE_APPLICATION_ERROR(-20101, 'FALLA CONTROLADA');
+    END IF;
+  
+    V_MSG := 'CONDICION TRUNCAR';
+  
+    IF P_TRUNCAR THEN
+      V_MSG := 'TRUNCANDO';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => NULL,
+                     P_PROCESO_PADRE  => NULL,
+                     P_ESQUEMA_PREVIO => NULL,
+                     P_PROCESO_PREVIO => NULL,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => NULL,
+                     P_ESTADO         => 'INICIADO',
+                     P_EXITOSO        => NULL,
+                     P_MENSAJE        => V_MSG);
+      EXECUTE IMMEDIATE 'TRUNCATE TABLE DROPME_P7 DROP STORAGE';
+    END IF;
+  
+    V_MSG := 'LEYENDO DROPME_P6';
+    
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => NULL,
+                   P_ESTADO         => 'INICIADO',
+                   P_EXITOSO        => NULL,
+                   P_MENSAJE        => V_MSG);
+                       
+    SELECT COUNT(0) INTO V_FILAS FROM DROPME_P6;
+  
+    V_MSG := 'FILAS A INSERTAR';
+  
+    IF NVL(P_FILAS_CREAR, 0) > 0 THEN
+      V_MSG := 'INSERTANDO FILAS';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                     P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                     P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                     P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => NULL,
+                     P_ESTADO         => 'INICIADO',
+                     P_EXITOSO        => NULL,
+                     P_MENSAJE        => V_MSG);
+      FOR i IN 1 .. P_FILAS_CREAR LOOP
+        INSERT /*+APPEND*/
+        INTO DROPME_P7
+        VALUES
+          (i, 'FILA ' || i);
+      END LOOP;
+      COMMIT;
+    END IF;
+  
+    V_MSG := 'EJECUTANDO P_DROPME_P8';
+    
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => NULL,
+                   P_ESTADO         => 'INICIADO',
+                   P_EXITOSO        => NULL,
+                   P_MENSAJE        => V_MSG);    
+  
+    P_DROPME_P8(P_ESQUEMA_PADRE,
+                P_PROCESO_PADRE,
+                P_ESQUEMA_PADRE,
+                C_PROCESO,
+                1000,
+                TRUE,
+                FALSE,
+                V_MSG_DUMMY);
+  
+    V_MSG := 'FINALIZANDO';
+    P_MSG := 'TERMINO OK';
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => SYSDATE,
+                   P_ESTADO         => 'TERMINADO',
+                   P_EXITOSO        => 'S',
+                   P_MENSAJE        => P_MSG);
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      V_ERROR := SQLERRM;
+      P_MSG   := V_ERROR || ' ' || V_MSG;
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                     P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                     P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                     P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => SYSDATE,
+                     P_ESTADO         => 'TERMINADO',
+                     P_EXITOSO        => 'N',
+                     P_MENSAJE        => P_MSG);
+      RAISE;
+  END P_DROPME_P7;
+    
+  PROCEDURE P_DROPME_P8(P_ESQUEMA_PADRE  IN VARCHAR2,
+                        P_PROCESO_PADRE  IN VARCHAR2,
+                        P_ESQUEMA_PREVIO IN VARCHAR2,
+                        P_PROCESO_PREVIO IN VARCHAR2,
+                        P_FILAS_CREAR    IN NATURAL,
+                        P_TRUNCAR        IN BOOLEAN,
+                        P_FALLAR         IN BOOLEAN,
+                        P_MSG            OUT VARCHAR2) IS
+    V_ERROR     VARCHAR2(4000);
+    V_MSG       VARCHAR2(100);
+    V_MSG_DUMMY VARCHAR2(100);
+    V_FILAS     NATURAL := 0;
+    i           NATURAL := 0;
+    C_PROCESO CONSTANT VARCHAR2(100) := 'P_DROPME_P8';
+    C_FECHA   CONSTANT DATE := TRUNC(SYSDATE);
+    C_INICIO  CONSTANT DATE := SYSDATE;
+  BEGIN
+    V_MSG := 'INICIO';
+  
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => NULL,
+                   P_ESTADO         => 'INICIADO',
+                   P_EXITOSO        => NULL,
+                   P_MENSAJE        => 'INICIADO');
+  
+    V_MSG := 'FALLA CONTROLADA';
+  
+    IF P_FALLAR THEN
+      V_MSG := 'PROVOCANDO FALLA CONTROLADA';
+      P_MSG := 'ERRADO POR FALLA CONTROLADA';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                     P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                     P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                     P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => SYSDATE,
+                     P_ESTADO         => 'TERMINADO',
+                     P_EXITOSO        => 'N',
+                     P_MENSAJE        => P_MSG);
+      RAISE_APPLICATION_ERROR(-20101, 'FALLA CONTROLADA');
+    END IF;
+  
+    V_MSG := 'CONDICION TRUNCAR';
+  
+    IF P_TRUNCAR THEN
+      V_MSG := 'TRUNCANDO';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => NULL,
+                     P_PROCESO_PADRE  => NULL,
+                     P_ESQUEMA_PREVIO => NULL,
+                     P_PROCESO_PREVIO => NULL,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => NULL,
+                     P_ESTADO         => 'INICIADO',
+                     P_EXITOSO        => NULL,
+                     P_MENSAJE        => V_MSG);
+      EXECUTE IMMEDIATE 'TRUNCATE TABLE DROPME_P8 DROP STORAGE';
+    END IF;
+  
+    V_MSG := 'LEYENDO DROPME_P7';
+    
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => NULL,
+                   P_ESTADO         => 'INICIADO',
+                   P_EXITOSO        => NULL,
+                   P_MENSAJE        => V_MSG);
+                       
+    SELECT COUNT(0) INTO V_FILAS FROM DROPME_P7;
+  
+    V_MSG := 'FILAS A INSERTAR';
+  
+    IF NVL(P_FILAS_CREAR, 0) > 0 THEN
+      V_MSG := 'INSERTANDO FILAS';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                     P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                     P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                     P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => NULL,
+                     P_ESTADO         => 'INICIADO',
+                     P_EXITOSO        => NULL,
+                     P_MENSAJE        => V_MSG);
+      FOR i IN 1 .. P_FILAS_CREAR LOOP
+        INSERT /*+APPEND*/
+        INTO DROPME_P8
+        VALUES
+          (i, 'FILA ' || i);
+      END LOOP;
+      COMMIT;
+    END IF;
+  
+    V_MSG := 'EJECUTANDO P_DROPME_P9';
+    
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => NULL,
+                   P_ESTADO         => 'INICIADO',
+                   P_EXITOSO        => NULL,
+                   P_MENSAJE        => V_MSG);    
+  
+    P_DROPME_P9(P_ESQUEMA_PADRE,
+                P_PROCESO_PADRE,
+                P_ESQUEMA_PADRE,
+                C_PROCESO,
+                1000,
+                TRUE,
+                FALSE,
+                V_MSG_DUMMY);
+  
+    V_MSG := 'FINALIZANDO';
+    P_MSG := 'TERMINO OK';
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => SYSDATE,
+                   P_ESTADO         => 'TERMINADO',
+                   P_EXITOSO        => 'S',
+                   P_MENSAJE        => P_MSG);
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      V_ERROR := SQLERRM;
+      P_MSG   := V_ERROR || ' ' || V_MSG;
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                     P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                     P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                     P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => SYSDATE,
+                     P_ESTADO         => 'TERMINADO',
+                     P_EXITOSO        => 'N',
+                     P_MENSAJE        => P_MSG);
+      RAISE;
+  END P_DROPME_P8;
+  
+  PROCEDURE P_DROPME_P9(P_ESQUEMA_PADRE  IN VARCHAR2,
+                        P_PROCESO_PADRE  IN VARCHAR2,
+                        P_ESQUEMA_PREVIO IN VARCHAR2,
+                        P_PROCESO_PREVIO IN VARCHAR2,
+                        P_FILAS_CREAR    IN NATURAL,
+                        P_TRUNCAR        IN BOOLEAN,
+                        P_FALLAR         IN BOOLEAN,
+                        P_MSG            OUT VARCHAR2) IS
+    V_ERROR     VARCHAR2(4000);
+    V_MSG       VARCHAR2(100);
+    V_MSG_DUMMY VARCHAR2(100);
+    V_FILAS     NATURAL := 0;
+    i           NATURAL := 0;
+    C_PROCESO CONSTANT VARCHAR2(100) := 'P_DROPME_P9';
+    C_FECHA   CONSTANT DATE := TRUNC(SYSDATE);
+    C_INICIO  CONSTANT DATE := SYSDATE;
+  BEGIN
+    V_MSG := 'INICIO';
+  
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => NULL,
+                   P_ESTADO         => 'INICIADO',
+                   P_EXITOSO        => NULL,
+                   P_MENSAJE        => 'INICIADO');
+  
+    V_MSG := 'FALLA CONTROLADA';
+  
+    IF P_FALLAR THEN
+      V_MSG := 'PROVOCANDO FALLA CONTROLADA';
+      P_MSG := 'ERRADO POR FALLA CONTROLADA';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                     P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                     P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                     P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => SYSDATE,
+                     P_ESTADO         => 'TERMINADO',
+                     P_EXITOSO        => 'N',
+                     P_MENSAJE        => P_MSG);
+      RAISE_APPLICATION_ERROR(-20101, 'FALLA CONTROLADA');
+    END IF;
+  
+    V_MSG := 'CONDICION TRUNCAR';
+  
+    IF P_TRUNCAR THEN
+      V_MSG := 'TRUNCANDO';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => NULL,
+                     P_PROCESO_PADRE  => NULL,
+                     P_ESQUEMA_PREVIO => NULL,
+                     P_PROCESO_PREVIO => NULL,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => NULL,
+                     P_ESTADO         => 'INICIADO',
+                     P_EXITOSO        => NULL,
+                     P_MENSAJE        => V_MSG);
+      EXECUTE IMMEDIATE 'TRUNCATE TABLE DROPME_P9 DROP STORAGE';
+    END IF;
+  
+    V_MSG := 'LEYENDO DROPME_P8';
+    
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => NULL,
+                   P_ESTADO         => 'INICIADO',
+                   P_EXITOSO        => NULL,
+                   P_MENSAJE        => V_MSG);
+                       
+    SELECT COUNT(0) INTO V_FILAS FROM DROPME_P8;
+  
+    V_MSG := 'FILAS A INSERTAR';
+  
+    IF NVL(P_FILAS_CREAR, 0) > 0 THEN
+      V_MSG := 'INSERTANDO FILAS';
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                     P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                     P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                     P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => NULL,
+                     P_ESTADO         => 'INICIADO',
+                     P_EXITOSO        => NULL,
+                     P_MENSAJE        => V_MSG);
+      FOR i IN 1 .. P_FILAS_CREAR LOOP
+        INSERT /*+APPEND*/
+        INTO DROPME_P9
+        VALUES
+          (i, 'FILA ' || i);
+      END LOOP;
+      COMMIT;
+    END IF;
+  
+    /*V_MSG := 'EJECUTANDO P_DROPME_P4';
+  
+    P_DROPME_P3(P_ESQUEMA_PADRE,
+                P_PROCESO_PADRE,
+                P_ESQUEMA_PADRE,
+                C_PROCESO,
+                1000,
+                TRUE,
+                FALSE,
+                V_MSG_DUMMY);*/
+  
+    V_MSG := 'FINALIZANDO';
+    P_MSG := 'TERMINO OK';
+    P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                   P_PROCESO        => C_PROCESO,
+                   P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                   P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                   P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                   P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                   P_FECHA          => C_FECHA,
+                   P_FECHA_INICIO   => C_INICIO,
+                   P_FECHA_FIN      => SYSDATE,
+                   P_ESTADO         => 'TERMINADO',
+                   P_EXITOSO        => 'S',
+                   P_MENSAJE        => P_MSG);
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      V_ERROR := SQLERRM;
+      P_MSG   := V_ERROR || ' ' || V_MSG;
+      P_LOG_PROCESOS(P_ESQUEMA        => 'PKG_DROPME_PRUEBA',
+                     P_PROCESO        => C_PROCESO,
+                     P_ESQUEMA_PADRE  => P_ESQUEMA_PADRE,
+                     P_PROCESO_PADRE  => P_PROCESO_PADRE,
+                     P_ESQUEMA_PREVIO => P_ESQUEMA_PREVIO,
+                     P_PROCESO_PREVIO => P_PROCESO_PREVIO,
+                     P_FECHA          => C_FECHA,
+                     P_FECHA_INICIO   => C_INICIO,
+                     P_FECHA_FIN      => SYSDATE,
+                     P_ESTADO         => 'TERMINADO',
+                     P_EXITOSO        => 'N',
+                     P_MENSAJE        => P_MSG);
+      RAISE;
+  END P_DROPME_P9;
+    
+END PKG_DROPME_PRUEBA;
